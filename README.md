@@ -12,9 +12,8 @@ This started as a hands-on way to learn JavaScript and explore game logic, DOM m
 ---
 
 ## 🚀 Demo
-
+- 🕹️ **Play it live:** [Try it here](https://da-gohil.github.io/2048-Game/)
 - 📺 **Video walkthrough:** [YouTube Demo](https://www.youtube.com/@iDarshanGohil/playlists)
-- 🕹️ **Play it live:** [Try it here](#) <!-- TODO: add deployed link -->
 
 ## 👀 At a Glance
 
