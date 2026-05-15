@@ -2,9 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gridDisplay = document.querySelector('.grid')
     const scoreDisplay = document.getElementById('score')
     let resultDisplay = document.getElementById('result')
-
     // console.log(gridDisplay);
-
     // If the HTML doesn't have a #result element, create one as a full-board overlay
     if (!resultDisplay) {
         resultDisplay = document.createElement('div')
@@ -19,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Place the overlay inside the grid so it sits on top of the board
         gridDisplay.appendChild(resultDisplay)
     }
-
     // Restart button in the header (next to the score)
     let restartButton = document.getElementById('restart')
     if (!restartButton) {
@@ -32,11 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const info = document.querySelector('.info')
         if (info) info.appendChild(restartButton)
     }
-
     const width = 4
     let squares = []
     let score = 0
-
     // Create the play board 4 X 4 = 16 tiles
     function createBoard() {
         for (let i = 0; i < width * width; i++) {
@@ -51,7 +46,6 @@ document.addEventListener('DOMContentLoaded', () => {
         generate()
     }
     createBoard()
-
     //generate a new number
     function generate() {
         // Pick from the list of empty cells directly — no recursion, no infinite loops
@@ -60,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (squares[i].innerHTML == 0) emptyIndices.push(i)
         }
         if (emptyIndices.length === 0) return
-
         const randomNumber = emptyIndices[Math.floor(Math.random() * emptyIndices.length)]
         // console.log(randomNumber)
         // Real 2048 spawns a 4 about 10% of the time
@@ -70,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         //checkForGameOver
         checkForGameOver()
     }
-
     function moveRight() {
         for (let i = 0; i < 16; i++) {
             if (i % 4 == 0) {
@@ -80,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let totalFour = squares[i + 3].innerHTML
                 let row = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
                 // console.log(row)
-
                 //filter the row
                 let filteredRow = row.filter(num => num)
                 let missing = 4 - filteredRow.length
@@ -88,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let newRow = zeros.concat(filteredRow)
                 // console.log("filtered row " + filteredRow)
                 // console.log("new row " + newRow)
-
                 squares[i].innerHTML = newRow[0]
                 squares[i + 1].innerHTML = newRow[1]
                 squares[i + 2].innerHTML = newRow[2]
@@ -96,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
     function moveLeft() {
         for (let i = 0; i < 16; i++) {
             if (i % 4 === 0) {
@@ -106,7 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let totalFour = squares[i + 3].innerHTML
                 let row = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
                 // console.log(row)
-
                 //filter the row
                 let filteredRow = row.filter(num => num)
                 let missing = 4 - filteredRow.length
@@ -114,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 let newRow = filteredRow.concat(zeros)
                 // console.log("filtered row " + filteredRow)
                 // console.log("new row " + newRow)
-
                 squares[i].innerHTML = newRow[0]
                 squares[i + 1].innerHTML = newRow[1]
                 squares[i + 2].innerHTML = newRow[2]
@@ -122,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
     function moveUp() {
         for (let i = 0; i < 4; i++) {
             let totalOne = squares[i].innerHTML
@@ -131,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalFour = squares[i + width * 3].innerHTML
             let column = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
             // console.log(row)
-
             //filter the row
             let filteredColumn = column.filter(num => num)
             let missing = 4 - filteredColumn.length
@@ -139,14 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let newColumn = filteredColumn.concat(zeros)
             // console.log("filtered row " + filteredRow)
             // console.log("new row " + newRow)
-
             squares[i].innerHTML = newColumn[0]
             squares[i + width].innerHTML = newColumn[1]
             squares[i + width * 2].innerHTML = newColumn[2]
             squares[i + width * 3].innerHTML = newColumn[3]
         }
     }
-
     function moveDown() {
         for (let i = 0; i < 4; i++) {
             let totalOne = squares[i].innerHTML
@@ -155,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalFour = squares[i + width * 3].innerHTML
             let column = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
             // console.log(row)
-
             //filter the row
             let filteredColumn = column.filter(num => num)
             let missing = 4 - filteredColumn.length
@@ -163,14 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let newColumn = zeros.concat(filteredColumn)
             // console.log("filtered row " + filteredRow)
             // console.log("new row " + newRow)
-
             squares[i].innerHTML = newColumn[0]
             squares[i + width].innerHTML = newColumn[1]
             squares[i + width * 2].innerHTML = newColumn[2]
             squares[i + width * 3].innerHTML = newColumn[3]
         }
     }
-
     function combineColumn() {
         // Iterate bottom-up so the lower pair merges first on a Down move
         for (let i = 11; i >= 0; i--) {
@@ -201,12 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
         //CheckforWin()
         checkWin()
     }
-
     // Snapshot the board so we can tell if a move actually changed anything
     function snapshot() {
         return squares.map(sq => sq.innerHTML).join(',')
     }
-
     //assign function to the keys
     function control(e) {
         if (e.key === 'ArrowLeft') {
@@ -221,6 +199,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.addEventListener('keydown', control)
 
+    // Touch support — translate swipes into the same key handlers
+    let touchStartX = 0
+    let touchStartY = 0
+
+    gridDisplay.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX
+        touchStartY = e.touches[0].clientY
+    }, { passive: true })
+
+    gridDisplay.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - touchStartX
+        const dy = e.changedTouches[0].clientY - touchStartY
+        const absX = Math.abs(dx)
+        const absY = Math.abs(dy)
+
+        // Ignore taps and tiny drags
+        if (Math.max(absX, absY) < 30) return
+
+        if (absX > absY) {
+            if (dx > 0) keyRight()
+            else keyLeft()
+        } else {
+            if (dy > 0) keyDown()
+            else keyUp()
+        }
+    }, { passive: true })
+
     function keyLeft() {
         const before = snapshot()
         moveLeft()
@@ -229,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addColors()
         if (snapshot() !== before) generate()
     }
-
     function keyRight() {
         const before = snapshot()
         moveRight()
@@ -238,7 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addColors()
         if (snapshot() !== before) generate()
     }
-
     function keyUp() {
         const before = snapshot()
         moveUp()
@@ -247,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addColors()
         if (snapshot() !== before) generate()
     }
-
     function keyDown() {
         const before = snapshot()
         moveDown()
@@ -256,7 +258,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addColors()
         if (snapshot() !== before) generate()
     }
-
     //check for number 2048 in the squares to WIN function
     function checkWin(){
         for(let i =0; i<squares.length; i++){
@@ -267,7 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
     function checkForGameOver(){
         // A board is "over" only if it's full AND no adjacent pair can still merge
         let zeroes = 0
@@ -277,7 +277,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (zeroes > 0) return
-
         // Board is full — check whether any adjacent horizontal or vertical pair is equal
         for (let i = 0; i < squares.length; i++) {
             const v = squares[i].innerHTML
@@ -286,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // down neighbor (skip if in bottom row)
             if (i < 12 && squares[i + width].innerHTML === v) return
         }
-
         showResult('You Lose!', 'lose')
         document.removeEventListener('keydown', control)
     }
@@ -297,14 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
             squares[i].setAttribute('data-value', String(squares[i].innerHTML))
         }
     }
-
     // Show the win/lose overlay with the right styling hook
     function showResult(message, kind) {
         resultDisplay.classList.add('is-visible', kind)
         const textNode = resultDisplay.querySelector('.result-text')
         if (textNode) textNode.textContent = message
     }
-
     // Reset the game to a fresh state
     function restart() {
         score = 0
@@ -319,7 +315,6 @@ document.addEventListener('DOMContentLoaded', () => {
         generate()
         generate()
     }
-
     restartButton.addEventListener('click', restart)
     // The "Play again" button inside the overlay also restarts
     const overlayRestart = resultDisplay.querySelector('.result-restart')
