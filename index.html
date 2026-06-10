@@ -1,25 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2048 Game</title>
-    <link rel = "stylesheet" href = "style.css"/>
-    <script src = "app.js"> </script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FFFFFF">
+    <title>2048</title>
+    <link rel="stylesheet" href="style.css"/>
+    <script src="app.js" defer></script>
 </head>
 <body>
-    
-    <div class = "container">
-        <div class = "info">
-                <h1> 2048 game </h1>
-                <div class="score-container">
-                    <h2 class= "score-title"> score <span id = "score"> 0 </span></h2>
-                </div>
-        </div>
-        <p>Join the numbers to get the <b>2048</b> title!</p>
-        <div class = "grid"></div>
-    </div>
-    
+    <main class="container">
+        <header class="topbar">
+            <div class="brand">
+                <span class="logo">2048</span>
+                <p class="tagline">Join the numbers to reach <b>2048</b></p>
+            </div>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+                <svg class="icon-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.5"/>
+                    <g stroke-linecap="round">
+                        <line x1="12" y1="1.5" x2="12" y2="4"/>
+                        <line x1="12" y1="20" x2="12" y2="22.5"/>
+                        <line x1="1.5" y1="12" x2="4" y2="12"/>
+                        <line x1="20" y1="12" x2="22.5" y2="12"/>
+                        <line x1="4.2" y1="4.2" x2="6" y2="6"/>
+                        <line x1="18" y1="18" x2="19.8" y2="19.8"/>
+                        <line x1="4.2" y1="19.8" x2="6" y2="18"/>
+                        <line x1="18" y1="6" x2="19.8" y2="4.2"/>
+                    </g>
+                </svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+                </svg>
+            </button>
+        </header>
+
+        <section class="scoreboard">
+            <div class="score-card">
+                <span class="score-label">Score</span>
+                <span id="score" class="score-value">0</span>
+            </div>
+            <div class="score-card">
+                <span class="score-label">Best</span>
+                <span id="best" class="score-value">0</span>
+            </div>
+            <button id="restart" class="restart-button" type="button">New Game</button>
+        </section>
+
+        <div class="grid"></div>
+    </main>
 </body>
 </html>
