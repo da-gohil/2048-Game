@@ -1,92 +1,238 @@
+/* ============================================================
+   2048 — design tokens
+   Light theme is the default; dark theme overrides on [data-theme="dark"]
+   ============================================================ */
 :root {
-  --bg:        #FAFAF7;
-  --board:     #F4F1EC;
-  --cell:      #EDE9E2;
-  --border:    #ECEAE5;
-  --ink:       #1C1B1A;
-  --ink-soft:  #4A4845;
+  /* Light — clean canvas, vibrant tile spectrum */
+  --bg:        #FFFFFF;
+  --board:     #F4F4F7;
+  --cell:      #ECECF0;
+  --surface:   #FFFFFF;
+  --border:    rgba(0, 0, 0, 0.08);
+  --ink:       #1C1C1E;
+  --ink-soft:  #6E6E73;
   --ink-light: #FFFFFF;
-  --accent:    #E0484D;
+  --accent:    #6C4CF1;
+  --shadow:    0 1px 1px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.08);
+  --overlay-bg: rgba(255, 255, 255, 0.82);
+  /* subtle desaturated grain for a matte paper finish */
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
 
-  --tile-2:    #FFFFFF;
-  --tile-4:    #FBF4EA;
-  --tile-8:    #F6E5CC;
-  --tile-16:   #F2CFA3;
-  --tile-32:   #ECB280;
-  --tile-64:   #E59264;
-  --tile-128:  #DC6F58;
-  --tile-256:  #D2504D;
-  --tile-512:  #B83A45;
-  --tile-1024: #8E2A3C;
-  --tile-2048: #1C1B1A;
+  /* vibrant spectrum */
+  --tile-2:    #34C3FF; /* sky    */
+  --tile-4:    #1FD18C; /* green  */
+  --tile-8:    #FFD60A; /* yellow */
+  --tile-16:   #FF9F0A; /* orange */
+  --tile-32:   #FF5E5E; /* red    */
+  --tile-64:   #FF3D8B; /* pink   */
+  --tile-128:  #B05CFF; /* purple */
+  --tile-256:  #7C5CFF; /* violet */
+  --tile-512:  #4C7DFF; /* blue   */
+  --tile-1024: #00C2D1; /* teal   */
+  --tile-2048: #FFC400; /* gold   */
 }
 
+[data-theme="dark"] {
+  /* Dark — neon arcade: deep blue-black canvas, glowing tiles */
+  --bg:        #07070F;
+  --board:     #0E0E1C;
+  --cell:      #15152A;
+  --surface:   #12122A;
+  --border:    rgba(124, 140, 255, 0.18);
+  --ink:       #FFFFFF;
+  --ink-soft:  #8E8EC0;
+  --ink-light: #FFFFFF;
+  --accent:    #8A7DFF;
+  --shadow:    0 1px 1px rgba(0, 0, 0, 0.6), 0 6px 24px rgba(0, 0, 0, 0.6);
+  --overlay-bg: rgba(7, 7, 15, 0.80);
+  /* slightly stronger grain so the matte finish reads on the dark canvas */
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
+
+  /* bright neon palette — used as fill, glow and number color in dark mode */
+  --tile-2:    #00E0FF; /* cyan    */
+  --tile-4:    #00FF95; /* green   */
+  --tile-8:    #FFE600; /* yellow  */
+  --tile-16:   #FF9D00; /* orange  */
+  --tile-32:   #FF4D6D; /* red     */
+  --tile-64:   #FF2D95; /* magenta */
+  --tile-128:  #C77DFF; /* purple  */
+  --tile-256:  #9D7BFF; /* violet  */
+  --tile-512:  #5C8DFF; /* blue    */
+  --tile-1024: #2DE2E6; /* teal    */
+  --tile-2048: #FFE600; /* gold    */
+}
+
+/* ============================================================
+   Base — system font stack (Apple SF / clean sans, like Uber)
+   ============================================================ */
 * { box-sizing: border-box; }
 
-body {
+html, body {
+  height: 100%;
   margin: 0;
-  padding: 48px 24px;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: 'Times New Roman', serif;
-  display: flex;
-  justify-content: center;
+  /* Keep the page static on mobile: no scroll, no rubber-band bounce */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-.container { width: 100%; max-width: 520px; }
-
-.info {
+body {
+  background: var(--paper), var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+               Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 24px;
+  /* Disable browser swipe gestures (pull-to-refresh, page pan) */
+  touch-action: none;
+  transition: background 240ms ease, color 240ms ease;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+}
+
+/* ============================================================
+   Top bar — brand + theme toggle
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
-.info h1 {
-  font-weight: 700;
-  font-size: 56px;
-  margin: 0 auto 0 0;
-  text-transform: lowercase;
+.brand { min-width: 0; }
+
+.logo {
+  display: block;
+  font-weight: 800;
+  font-size: 48px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink); /* solid: black on light, white on dark */
 }
 
-.score-container {
-  padding: 12px 20px;
-  background: #FFF;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.restart-button {
-  padding: 12px 20px;
-  background: var(--ink);
-  color: var(--ink-light);
-  font-family: 'Times New Roman', serif;
-  font-weight: 600;
-  font-size: 14px;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.restart-button:hover { background: #000; }
-
-.container > p {
-  margin: 0 0 24px;
+.tagline {
+  margin: 10px 0 0;
+  font-size: 15px;
   color: var(--ink-soft);
 }
 
+.theme-toggle {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 120ms ease, background 240ms ease, color 240ms ease;
+}
+
+.theme-toggle:hover { transform: translateY(-1px); }
+.theme-toggle:active { transform: translateY(0) scale(0.96); }
+
+.theme-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.theme-toggle .icon-moon { fill: currentColor; stroke: none; }
+
+/* Show sun in light mode, moon in dark mode */
+.theme-toggle .icon-moon { display: none; }
+.theme-toggle .icon-sun  { display: block; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+[data-theme="dark"] .theme-toggle .icon-sun  { display: none; }
+
+/* ============================================================
+   Scoreboard
+   ============================================================ */
+.scoreboard {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.score-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  transition: background 240ms ease;
+}
+
+.score-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.score-value {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.restart-button {
+  flex-shrink: 0;
+  padding: 0 22px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.restart-button:hover { transform: translateY(-1px); }
+.restart-button:active { transform: translateY(0) scale(0.97); }
+
+/* ============================================================
+   Board + tiles
+   ============================================================ */
 .grid {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  padding: 14px;
+  padding: 12px;
   background: var(--board);
-  border-radius: 20px;
+  border-radius: 28px;
+  box-shadow: var(--shadow);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  /* The board itself handles swipes; never let it scroll the page */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 240ms ease;
 }
 
 .grid > *:not(.result-overlay) {
@@ -94,74 +240,130 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--cell);
-  border-radius: 12px;
-  font-weight: 700;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  font-weight: 800;
   font-size: 44px;
-  transition: background 120ms ease;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  transition: background 140ms ease, color 140ms ease,
+              border-color 140ms ease, box-shadow 140ms ease, transform 90ms ease;
 }
 
 .grid > *[data-value="0"] { color: transparent; }
 
-.grid > [data-value="2"]    { background: var(--tile-2); }
-.grid > [data-value="4"]    { background: var(--tile-4); }
-.grid > [data-value="8"]    { background: var(--tile-8); }
-.grid > [data-value="16"]   { background: var(--tile-16); }
-.grid > [data-value="32"]   { background: var(--tile-32); }
-.grid > [data-value="64"]   { background: var(--tile-64);   color: var(--ink-light); }
-.grid > [data-value="128"]  { background: var(--tile-128);  color: var(--ink-light); font-size: 38px; }
-.grid > [data-value="256"]  { background: var(--tile-256);  color: var(--ink-light); font-size: 38px; }
-.grid > [data-value="512"]  { background: var(--tile-512);  color: var(--ink-light); font-size: 38px; }
-.grid > [data-value="1024"] { background: var(--tile-1024); color: var(--ink-light); font-size: 32px; }
-.grid > [data-value="2048"] { background: var(--tile-2048); color: var(--ink-light); font-size: 32px; }
+/* Each tile exposes its color as --c so dark mode can reuse it for the neon glow.
+   Light-mode text: dark on the bright tiles, white on the saturated ones. */
+.grid > [data-value="2"]    { --c: var(--tile-2);    background: var(--c); color: #1C1C1E; }
+.grid > [data-value="4"]    { --c: var(--tile-4);    background: var(--c); color: #1C1C1E; }
+.grid > [data-value="8"]    { --c: var(--tile-8);    background: var(--c); color: #1C1C1E; }
+.grid > [data-value="16"]   { --c: var(--tile-16);   background: var(--c); color: #1C1C1E; }
+.grid > [data-value="32"]   { --c: var(--tile-32);   background: var(--c); color: #FFFFFF; }
+.grid > [data-value="64"]   { --c: var(--tile-64);   background: var(--c); color: #FFFFFF; }
+.grid > [data-value="128"]  { --c: var(--tile-128);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.grid > [data-value="256"]  { --c: var(--tile-256);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.grid > [data-value="512"]  { --c: var(--tile-512);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.grid > [data-value="1024"] { --c: var(--tile-1024); background: var(--c); color: #1C1C1E; font-size: 32px; }
+.grid > [data-value="2048"] { --c: var(--tile-2048); background: var(--c); color: #1C1C1E; font-size: 32px; }
 
-/* Result overlay (Win / Lose) */
+/* Dark mode = neon arcade: dark tiles with a glowing colored outline + number */
+[data-theme="dark"] .grid > *:not(.result-overlay):not([data-value="0"]) {
+  background: #14142A;
+  color: var(--c);
+  border-color: var(--c);
+  text-shadow: 0 0 12px var(--c);
+  box-shadow: 0 0 16px -3px var(--c), inset 0 0 14px -8px var(--c);
+}
+
+/* Ambient neon glow around the board + canvas backdrop */
+[data-theme="dark"] .grid {
+  box-shadow: 0 0 60px -16px rgba(124, 92, 255, 0.5), var(--shadow);
+  border: 1px solid rgba(124, 140, 255, 0.10);
+}
+[data-theme="dark"] body {
+  background:
+    var(--paper),
+    radial-gradient(110% 60% at 50% 0%, rgba(124, 92, 255, 0.12), transparent 70%),
+    var(--bg);
+}
+
+/* Pop animation when a tile gains a value */
+@keyframes tile-pop {
+  0%   { transform: scale(0.6); }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.grid > .is-new { animation: tile-pop 160ms ease-out; }
+
+/* ============================================================
+   Win / Lose overlay
+   ============================================================ */
 .result-overlay {
   position: absolute;
   inset: 0;
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 20px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border-radius: 28px;
+  z-index: 2;
 }
 
-.result-overlay.is-visible { display: flex; }
-
-.result-card {
-  text-align: center;
-  padding: 32px;
+.result-overlay.is-visible {
+  display: flex;
+  animation: overlay-in 220ms ease-out;
 }
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.result-card { text-align: center; padding: 32px; }
 
 .result-text {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 44px;
+  letter-spacing: -0.02em;
   margin: 0 0 20px;
 }
 
-.result-overlay.win  .result-text { color: var(--accent); }
+.result-overlay.win .result-text { color: var(--accent); }
 
 .result-restart {
-  padding: 12px 24px;
-  background: var(--ink);
-  color: var(--ink-light);
-  font-family: 'Times New Roman', serif;
-  font-weight: 600;
-  font-size: 14px;
+  padding: 13px 28px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
   border: 0;
   border-radius: 999px;
   cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
 }
 
-.result-restart:hover { background: #000; }
+.result-restart:hover { transform: translateY(-1px); }
+.result-restart:active { transform: translateY(0) scale(0.97); }
 
-@media (max-width: 520px) {
-  body { padding: 24px 16px; }
-  .info h1 { font-size: 40px; }
-  .grid > *:not(.result-overlay) { font-size: 28px; }
+/* ============================================================
+   Small screens
+   ============================================================ */
+@media (max-width: 480px) {
+  body { padding: 16px; }
+  .logo { font-size: 40px; }
+  .grid { padding: 10px; gap: 10px; }
+  .grid > *:not(.result-overlay) { font-size: 30px; }
   .grid > [data-value="128"],
   .grid > [data-value="256"],
-  .grid > [data-value="512"]  { font-size: 24px; }
+  .grid > [data-value="512"]  { font-size: 26px; }
   .grid > [data-value="1024"],
-  .grid > [data-value="2048"] { font-size: 20px; }
-  .result-text { font-size: 32px; }
+  .grid > [data-value="2048"] { font-size: 22px; }
+  .result-text { font-size: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
