@@ -225,49 +225,62 @@ body {
   background: var(--board);
   border-radius: 28px;
   box-shadow: var(--shadow);
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  /* The board itself handles swipes; never let it scroll the page */
+  /* The board handles swipes; never let it scroll the page */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   transition: background 240ms ease;
 }
 
-.grid > *:not(.result-overlay) {
+/* Two aligned layers: static background slots, and the moving tiles on top */
+.cells,
+.tiles {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 12px;
+}
+.tiles { pointer-events: none; }
+
+.cell {
+  background: var(--cell);
+  border-radius: 16px;
+}
+
+.tile {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--cell);
   border: 2px solid transparent;
   border-radius: 16px;
   font-weight: 800;
   font-size: 44px;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  transition: background 140ms ease, color 140ms ease,
-              border-color 140ms ease, box-shadow 140ms ease, transform 90ms ease;
+  will-change: transform;
+  /* The slide is capped at 100ms; other props ease in on theme switch */
+  transition: transform 100ms ease, background 140ms ease, color 140ms ease,
+              border-color 140ms ease, box-shadow 140ms ease;
 }
-
-.grid > *[data-value="0"] { color: transparent; }
 
 /* Each tile exposes its color as --c so dark mode can reuse it for the neon glow.
    Light-mode text: dark on the bright tiles, white on the saturated ones. */
-.grid > [data-value="2"]    { --c: var(--tile-2);    background: var(--c); color: #1C1C1E; }
-.grid > [data-value="4"]    { --c: var(--tile-4);    background: var(--c); color: #1C1C1E; }
-.grid > [data-value="8"]    { --c: var(--tile-8);    background: var(--c); color: #1C1C1E; }
-.grid > [data-value="16"]   { --c: var(--tile-16);   background: var(--c); color: #1C1C1E; }
-.grid > [data-value="32"]   { --c: var(--tile-32);   background: var(--c); color: #FFFFFF; }
-.grid > [data-value="64"]   { --c: var(--tile-64);   background: var(--c); color: #FFFFFF; }
-.grid > [data-value="128"]  { --c: var(--tile-128);  background: var(--c); color: #FFFFFF; font-size: 38px; }
-.grid > [data-value="256"]  { --c: var(--tile-256);  background: var(--c); color: #FFFFFF; font-size: 38px; }
-.grid > [data-value="512"]  { --c: var(--tile-512);  background: var(--c); color: #FFFFFF; font-size: 38px; }
-.grid > [data-value="1024"] { --c: var(--tile-1024); background: var(--c); color: #1C1C1E; font-size: 32px; }
-.grid > [data-value="2048"] { --c: var(--tile-2048); background: var(--c); color: #1C1C1E; font-size: 32px; }
+.tile[data-value="2"]    { --c: var(--tile-2);    background: var(--c); color: #1C1C1E; }
+.tile[data-value="4"]    { --c: var(--tile-4);    background: var(--c); color: #1C1C1E; }
+.tile[data-value="8"]    { --c: var(--tile-8);    background: var(--c); color: #1C1C1E; }
+.tile[data-value="16"]   { --c: var(--tile-16);   background: var(--c); color: #1C1C1E; }
+.tile[data-value="32"]   { --c: var(--tile-32);   background: var(--c); color: #FFFFFF; }
+.tile[data-value="64"]   { --c: var(--tile-64);   background: var(--c); color: #FFFFFF; }
+.tile[data-value="128"]  { --c: var(--tile-128);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.tile[data-value="256"]  { --c: var(--tile-256);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.tile[data-value="512"]  { --c: var(--tile-512);  background: var(--c); color: #FFFFFF; font-size: 38px; }
+.tile[data-value="1024"] { --c: var(--tile-1024); background: var(--c); color: #1C1C1E; font-size: 32px; }
+.tile[data-value="2048"] { --c: var(--tile-2048); background: var(--c); color: #1C1C1E; font-size: 32px; }
 
 /* Dark mode = neon arcade: dark tiles with a glowing colored outline + number */
-[data-theme="dark"] .grid > *:not(.result-overlay):not([data-value="0"]) {
+[data-theme="dark"] .tile {
   background: #14142A;
   color: var(--c);
   border-color: var(--c);
@@ -287,13 +300,20 @@ body {
     var(--bg);
 }
 
-/* Pop animation when a tile gains a value */
+/* Spawn + merge pops (transform-based; run after any slide settles) */
 @keyframes tile-pop {
-  0%   { transform: scale(0.6); }
-  60%  { transform: scale(1.08); }
+  0%   { transform: scale(0.5); }
+  60%  { transform: scale(1.1); }
   100% { transform: scale(1); }
 }
-.grid > .is-new { animation: tile-pop 160ms ease-out; }
+.tile.is-new { animation: tile-pop 140ms ease-out; }
+
+@keyframes tile-merge {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+.tile.is-merged { animation: tile-merge 120ms ease-out; }
 
 /* ============================================================
    Win / Lose overlay
@@ -308,7 +328,7 @@ body {
   backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   border-radius: 28px;
-  z-index: 2;
+  z-index: 5;
 }
 
 .result-overlay.is-visible {
@@ -354,13 +374,14 @@ body {
 @media (max-width: 480px) {
   body { padding: 16px; }
   .logo { font-size: 40px; }
-  .grid { padding: 10px; gap: 10px; }
-  .grid > *:not(.result-overlay) { font-size: 30px; }
-  .grid > [data-value="128"],
-  .grid > [data-value="256"],
-  .grid > [data-value="512"]  { font-size: 26px; }
-  .grid > [data-value="1024"],
-  .grid > [data-value="2048"] { font-size: 22px; }
+  .grid { padding: 10px; }
+  .cells, .tiles { inset: 10px; gap: 10px; }
+  .tile { font-size: 30px; }
+  .tile[data-value="128"],
+  .tile[data-value="256"],
+  .tile[data-value="512"]  { font-size: 26px; }
+  .tile[data-value="1024"],
+  .tile[data-value="2048"] { font-size: 22px; }
   .result-text { font-size: 34px; }
 }
 
