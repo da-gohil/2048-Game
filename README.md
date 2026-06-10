@@ -23,12 +23,15 @@ This started as a hands-on way to learn JavaScript and explore game logic, DOM m
 
 ## ✨ Features
 
-- 🎯 Fully playable 2048 game with smooth tile animations
-- 🏆 Score tracking with current and best score (persisted via `localStorage`)
-- 📱 Responsive design works on desktop and mobile touchscreens
-- ⌨️ Keyboard arrow keys **and** swipe support for mobile
+- 🎯 Fully playable 2048 with **smooth sliding tile animations** — tiles glide and merge (FLIP technique, capped at **100ms** so it stays fast)
+- 🌗 **Light / Dark mode toggle** — a clean, colorful light theme and a **neon arcade** dark theme (glowing tiles), with the choice persisted and an OS-preference fallback
+- 🎨 **Modern design system** — system font stack (the clean sans Apple & Uber use), vibrant tile spectrum, subtle paper-grain texture, soft shadows, rounded corners
+- 🏆 Score tracking with current **and** best score (persisted via `localStorage`)
+- ⌨️ Keyboard arrow keys **and** swipe support — swipes fire **mid-gesture** (the instant the threshold is crossed) so it feels instant, not laggy
+- 📱 Mobile-first: the screen stays **completely static** while swiping (no page scroll, bounce, pull-to-refresh, zoom, or tap-highlight)
 - 🔄 **"New Game"** button to restart anytime
-- 🎨 Clean, minimalist UI styled with pure CSS
+- ♿ Respects `prefers-reduced-motion` for accessibility
+- 🚀 Zero dependencies, zero build step — pure HTML/CSS/JS, deployable straight to GitHub Pages
 
 ---
 
@@ -37,6 +40,19 @@ This started as a hands-on way to learn JavaScript and explore game logic, DOM m
 - Use the **arrow keys** (↑ ↓ ← →) or **swipe** on a touch device to move the tiles
 - When two tiles with the same number touch, they **merge into one** and their values add up
 - Reach the **2048 tile** to win — but keep playing to beat your high score!
+- Tap the **sun / moon button** (top-right) to switch between light and the neon dark theme
+
+---
+
+## 🎨 Design & Architecture
+
+A lot of the polish lives under the hood:
+
+- **Theming** — all colors are CSS custom properties (`--bg`, `--accent`, `--tile-*`, …). Dark mode just overrides them on `[data-theme="dark"]`, so a single token swap repaints the whole game. The choice is saved to `localStorage` and falls back to the OS `prefers-color-scheme`.
+- **Two-tone tiles** — the light theme runs a vibrant cool→warm spectrum; the dark theme is a neon arcade look (dark tiles with a glowing outline + number). Each tile exposes its color as a `--c` variable so dark mode reuses that one value for the fill-glow, border, and text-glow — no duplicated rules.
+- **Sliding animation (FLIP)** — the board is a real tile model (each tile is its own element with identity) rendered on a `.tiles` layer above a static `.cells` grid. On a move it measures positions → re-places tiles → inverts with `transform` → plays to the new spot, transitioning over **100ms**. An `isAnimating` lock keeps fast swipes from desyncing the board.
+- **Static-screen mobile UX** — `overflow:hidden`, `overscroll-behavior:none`, `touch-action:none`, a non-passive `touchmove` `preventDefault`, and a locked viewport stop all page panning, bounce, and zoom so only the game responds.
+- **Paper finish** — a subtle inline-SVG `feTurbulence` grain layered on the background (no image files).
 
 ---
 
@@ -69,8 +85,10 @@ While building this, I practised:
 - **JavaScript fundamentals** — arrays, objects, functions, event handling
 - **DOM manipulation** and updating the UI dynamically
 - **Game loop logic** — move, merge, spawn, check game-over conditions
-- **Keyboard and touch events** across platforms
-- **`localStorage`** to persist the best score across sessions
+- **FLIP animations** — measuring layout and animating with `transform` for smooth 60fps slides
+- **CSS custom properties** to build a token-driven, themeable design system (light + dark)
+- **Keyboard and touch events** across platforms, including mobile gesture handling and locking page scroll
+- **`localStorage`** to persist the best score and theme preference across sessions
 - **Project structure** — keeping code clean and readable in a small codebase
 
 ---
@@ -87,11 +105,13 @@ All contributions are welcome — features, better animations, accessibility imp
 
 ### 💡 Ideas on the Roadmap
 
+- [x] Dark mode toggle (neon arcade theme)
+- [x] Smooth sliding tile + merge animations
+- [x] Best-score persistence and mobile swipe support
 - [ ] Undo move
-- [ ] Dark mode toggle
-- [ ] Score animation when tiles merge
 - [ ] Sound effects
 - [ ] Different grid sizes (3×3, 5×5)
+- [ ] Continue playing after reaching 2048
 
 ---
 
