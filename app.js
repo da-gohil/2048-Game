@@ -53,18 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Place the overlay inside the grid so it sits on top of the board
         gridDisplay.appendChild(resultDisplay)
     }
-    // Restart button in the header (next to the score)
-    let restartButton = document.getElementById('restart')
-    if (!restartButton) {
-        restartButton = document.createElement('button')
-        restartButton.id = 'restart'
-        restartButton.className = 'restart-button'
-        restartButton.type = 'button'
-        restartButton.textContent = 'New game'
-        // Drop it into the .info row so it sits with the title and score
-        const info = document.querySelector('.info')
-        if (info) info.appendChild(restartButton)
-    }
+    // Restart button lives in the scoreboard (see index.html)
+    const restartButton = document.getElementById('restart')
     const width = 4
     let squares = []
     let score = 0
