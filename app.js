@@ -1,7 +1,43 @@
 document.addEventListener('DOMContentLoaded', () => {
     const gridDisplay = document.querySelector('.grid')
     const scoreDisplay = document.getElementById('score')
+    const bestDisplay = document.getElementById('best')
     let resultDisplay = document.getElementById('result')
+
+    // ---- Theme: persist choice, fall back to the OS preference ----
+    const themeToggle = document.getElementById('theme-toggle')
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]')
+    const themeBg = { light: '#FFFFFF', dark: '#07070F' }
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme)
+        if (themeColorMeta) themeColorMeta.setAttribute('content', themeBg[theme])
+    }
+    const savedTheme = localStorage.getItem('theme')
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'))
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+            applyTheme(next)
+            localStorage.setItem('theme', next)
+        })
+    }
+
+    // ---- Keep the page static on mobile: block page-level pan/bounce ----
+    // (Swipes inside the board are still handled by the game's touch logic.)
+    document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false })
+
+    // ---- Best score, persisted across sessions ----
+    let best = parseInt(localStorage.getItem('best')) || 0
+    if (bestDisplay) bestDisplay.innerHTML = best
+    function syncScore() {
+        scoreDisplay.innerHTML = score
+        if (score > best) {
+            best = score
+            localStorage.setItem('best', String(best))
+            if (bestDisplay) bestDisplay.innerHTML = best
+        }
+    }
     // console.log(gridDisplay);
     // If the HTML doesn't have a #result element, create one as a full-board overlay
     if (!resultDisplay) {
@@ -60,6 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const newValue = Math.random() < 0.9 ? 2 : 4
         squares[randomNumber].innerHTML = newValue
         squares[randomNumber].setAttribute('data-value', String(newValue))
+        // Pop the freshly spawned tile in
+        const fresh = squares[randomNumber]
+        fresh.classList.add('is-new')
+        setTimeout(() => fresh.classList.remove('is-new'), 200)
         //checkForGameOver
         checkForGameOver()
     }
@@ -160,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 squares[i].innerHTML = combinedTotal
                 squares[i + width].innerHTML = 0
                 score += combinedTotal
-                scoreDisplay.innerHTML = score
+                syncScore()
             }
         }
     }
@@ -174,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     squares[i].innerHTML = combinedTotal
                     squares[i + 1].innerHTML = 0
                     score += combinedTotal
-                    scoreDisplay.innerHTML = score
+                    syncScore()
                 }
             }
         }
