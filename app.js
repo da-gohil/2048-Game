@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ---- Keep the page static on mobile: block page-level pan/bounce ----
-    // (Swipes inside the board are still handled by the game's touch logic.)
     document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false })
 
     // ---- Best score, persisted across sessions ----
+    let score = 0
     let best = parseInt(localStorage.getItem('best')) || 0
     if (bestDisplay) bestDisplay.innerHTML = best
     function syncScore() {
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bestDisplay) bestDisplay.innerHTML = best
         }
     }
-    // console.log(gridDisplay);
+
     // If the HTML doesn't have a #result element, create one as a full-board overlay
     if (!resultDisplay) {
         resultDisplay = document.createElement('div')
@@ -50,303 +50,246 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="result-restart" type="button">Play again</button>
             </div>
         `
-        // Place the overlay inside the grid so it sits on top of the board
         gridDisplay.appendChild(resultDisplay)
     }
-    // Restart button lives in the scoreboard (see index.html)
     const restartButton = document.getElementById('restart')
-    const width = 4
-    let squares = []
-    let score = 0
-    // Create the play board 4 X 4 = 16 tiles
-    function createBoard() {
-        for (let i = 0; i < width * width; i++) {
-            const square = document.createElement('div')
-            square.innerHTML = 0
-            square.setAttribute('data-value', '0')
-            gridDisplay.appendChild(square)
-            squares.push(square)
-        }
-        //call twice for 2's 
-        generate()
-        generate()
+
+    // ============================================================
+    //  Board engine — tile-based model with FLIP slide animations
+    // ============================================================
+    const SIZE = 4
+    const CELLS = SIZE * SIZE
+    const ANIM_MS = 100 // slide duration cap
+
+    // board[i] holds a tile object { value, el, idx } or null. i = row*4 + col
+    const board = new Array(CELLS).fill(null)
+    let isAnimating = false
+    let gameOver = false
+
+    // Build the two layers: static background slots + the moving tile layer
+    const cellsLayer = document.createElement('div')
+    cellsLayer.className = 'cells'
+    for (let i = 0; i < CELLS; i++) {
+        const cell = document.createElement('div')
+        cell.className = 'cell'
+        cellsLayer.appendChild(cell)
     }
-    createBoard()
-    //generate a new number
+    const tilesLayer = document.createElement('div')
+    tilesLayer.className = 'tiles'
+    // Insert layers before the overlay so the overlay (z-index) stays on top
+    gridDisplay.insertBefore(tilesLayer, resultDisplay)
+    gridDisplay.insertBefore(cellsLayer, tilesLayer)
+
+    // Position a tile element on the grid track for board index i
+    function placeEl(el, i) {
+        el.style.gridColumnStart = String((i % SIZE) + 1)
+        el.style.gridRowStart = String(Math.floor(i / SIZE) + 1)
+    }
+
+    function createTile(value, i) {
+        const el = document.createElement('div')
+        el.className = 'tile'
+        el.textContent = value
+        el.setAttribute('data-value', String(value))
+        placeEl(el, i)
+        tilesLayer.appendChild(el)
+        return { value, el, idx: i, mergeTo: null }
+    }
+
+    // Spawn a 2 (90%) or 4 (10%) in a random empty cell, with a pop-in
     function generate() {
-        // Pick from the list of empty cells directly — no recursion, no infinite loops
-        const emptyIndices = []
-        for (let i = 0; i < squares.length; i++) {
-            if (squares[i].innerHTML == 0) emptyIndices.push(i)
-        }
-        if (emptyIndices.length === 0) return
-        const randomNumber = emptyIndices[Math.floor(Math.random() * emptyIndices.length)]
-        // console.log(randomNumber)
-        // Real 2048 spawns a 4 about 10% of the time
-        const newValue = Math.random() < 0.9 ? 2 : 4
-        squares[randomNumber].innerHTML = newValue
-        squares[randomNumber].setAttribute('data-value', String(newValue))
-        // Pop the freshly spawned tile in
-        const fresh = squares[randomNumber]
-        fresh.classList.add('is-new')
-        setTimeout(() => fresh.classList.remove('is-new'), 200)
-        //checkForGameOver
-        checkForGameOver()
+        const empty = []
+        for (let i = 0; i < CELLS; i++) if (!board[i]) empty.push(i)
+        if (!empty.length) return
+        const i = empty[Math.floor(Math.random() * empty.length)]
+        const value = Math.random() < 0.9 ? 2 : 4
+        const tile = createTile(value, i)
+        board[i] = tile
+        tile.el.classList.add('is-new')
+        setTimeout(() => tile.el.classList.remove('is-new'), 160)
     }
-    function moveRight() {
-        for (let i = 0; i < 16; i++) {
-            if (i % 4 == 0) {
-                let totalOne = squares[i].innerHTML
-                let totalTwo = squares[i + 1].innerHTML
-                let totalThree = squares[i + 2].innerHTML
-                let totalFour = squares[i + 3].innerHTML
-                let row = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
-                // console.log(row)
-                //filter the row
-                let filteredRow = row.filter(num => num)
-                let missing = 4 - filteredRow.length
-                let zeros = Array(missing).fill(0)
-                let newRow = zeros.concat(filteredRow)
-                // console.log("filtered row " + filteredRow)
-                // console.log("new row " + newRow)
-                squares[i].innerHTML = newRow[0]
-                squares[i + 1].innerHTML = newRow[1]
-                squares[i + 2].innerHTML = newRow[2]
-                squares[i + 3].innerHTML = newRow[3]
+
+    // Indices for each line (row/column) ordered from the wall outward
+    function lineOrder(dir) {
+        const lines = []
+        if (dir === 'left' || dir === 'right') {
+            for (let r = 0; r < SIZE; r++) {
+                const row = [0, 1, 2, 3].map(c => r * SIZE + c)
+                lines.push(dir === 'left' ? row : row.reverse())
             }
-        }
-    }
-    function moveLeft() {
-        for (let i = 0; i < 16; i++) {
-            if (i % 4 === 0) {
-                let totalOne = squares[i].innerHTML
-                let totalTwo = squares[i + 1].innerHTML
-                let totalThree = squares[i + 2].innerHTML
-                let totalFour = squares[i + 3].innerHTML
-                let row = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
-                // console.log(row)
-                //filter the row
-                let filteredRow = row.filter(num => num)
-                let missing = 4 - filteredRow.length
-                let zeros = Array(missing).fill(0)
-                let newRow = filteredRow.concat(zeros)
-                // console.log("filtered row " + filteredRow)
-                // console.log("new row " + newRow)
-                squares[i].innerHTML = newRow[0]
-                squares[i + 1].innerHTML = newRow[1]
-                squares[i + 2].innerHTML = newRow[2]
-                squares[i + 3].innerHTML = newRow[3]
-            }
-        }
-    }
-    function moveUp() {
-        for (let i = 0; i < 4; i++) {
-            let totalOne = squares[i].innerHTML
-            let totalTwo = squares[i + width].innerHTML
-            let totalThree = squares[i + width * 2].innerHTML
-            let totalFour = squares[i + width * 3].innerHTML
-            let column = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
-            // console.log(row)
-            //filter the row
-            let filteredColumn = column.filter(num => num)
-            let missing = 4 - filteredColumn.length
-            let zeros = Array(missing).fill(0)
-            let newColumn = filteredColumn.concat(zeros)
-            // console.log("filtered row " + filteredRow)
-            // console.log("new row " + newRow)
-            squares[i].innerHTML = newColumn[0]
-            squares[i + width].innerHTML = newColumn[1]
-            squares[i + width * 2].innerHTML = newColumn[2]
-            squares[i + width * 3].innerHTML = newColumn[3]
-        }
-    }
-    function moveDown() {
-        for (let i = 0; i < 4; i++) {
-            let totalOne = squares[i].innerHTML
-            let totalTwo = squares[i + width].innerHTML
-            let totalThree = squares[i + width * 2].innerHTML
-            let totalFour = squares[i + width * 3].innerHTML
-            let column = [parseInt(totalOne), parseInt(totalTwo), parseInt(totalThree), parseInt(totalFour)]
-            // console.log(row)
-            //filter the row
-            let filteredColumn = column.filter(num => num)
-            let missing = 4 - filteredColumn.length
-            let zeros = Array(missing).fill(0)
-            let newColumn = zeros.concat(filteredColumn)
-            // console.log("filtered row " + filteredRow)
-            // console.log("new row " + newRow)
-            squares[i].innerHTML = newColumn[0]
-            squares[i + width].innerHTML = newColumn[1]
-            squares[i + width * 2].innerHTML = newColumn[2]
-            squares[i + width * 3].innerHTML = newColumn[3]
-        }
-    }
-    function combineColumn() {
-        // Iterate bottom-up so the lower pair merges first on a Down move
-        for (let i = 11; i >= 0; i--) {
-            //First check if we do not combine tile across different rows
-            if (squares[i].innerHTML === squares[i + width].innerHTML) {
-                let combinedTotal = parseInt(squares[i].innerHTML) + parseInt(squares[i + width].innerHTML)
-                squares[i].innerHTML = combinedTotal
-                squares[i + width].innerHTML = 0
-                score += combinedTotal
-                syncScore()
-            }
-        }
-    }
-    function combineRow() {
-        // Iterate right-to-left so the rightmost pair merges first on a Right move
-        for (let i = 14; i >= 0; i--) {
-            //First check if we do not combine tile across different rows
-            if ((i + 1) % 4 !== 0) {
-                if (squares[i].innerHTML === squares[i + 1].innerHTML) {
-                    let combinedTotal = parseInt(squares[i].innerHTML) + parseInt(squares[i + 1].innerHTML)
-                    squares[i].innerHTML = combinedTotal
-                    squares[i + 1].innerHTML = 0
-                    score += combinedTotal
-                    syncScore()
-                }
-            }
-        }
-        //CheckforWin()
-        checkWin()
-    }
-    // Snapshot the board so we can tell if a move actually changed anything
-    function snapshot() {
-        return squares.map(sq => sq.innerHTML).join(',')
-    }
-    //assign function to the keys
-    function control(e) {
-        if (e.key === 'ArrowLeft') {
-            keyLeft()
-        } else if (e.key === 'ArrowRight') {
-            keyRight()
-        } else if (e.key === 'ArrowUp') {
-            keyUp()
-        } else if (e.key === 'ArrowDown') {
-            keyDown()
-        }
-    }
-    document.addEventListener('keydown', control)
-
-    // Touch support — translate swipes into the same key handlers
-    let touchStartX = 0
-    let touchStartY = 0
-
-    gridDisplay.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX
-        touchStartY = e.touches[0].clientY
-    }, { passive: true })
-
-    gridDisplay.addEventListener('touchend', (e) => {
-        const dx = e.changedTouches[0].clientX - touchStartX
-        const dy = e.changedTouches[0].clientY - touchStartY
-        const absX = Math.abs(dx)
-        const absY = Math.abs(dy)
-
-        // Ignore taps and tiny drags
-        if (Math.max(absX, absY) < 30) return
-
-        if (absX > absY) {
-            if (dx > 0) keyRight()
-            else keyLeft()
         } else {
-            if (dy > 0) keyDown()
-            else keyUp()
+            for (let c = 0; c < SIZE; c++) {
+                const col = [0, 1, 2, 3].map(r => r * SIZE + c)
+                lines.push(dir === 'up' ? col : col.reverse())
+            }
         }
-    }, { passive: true })
+        return lines
+    }
 
-    function keyLeft() {
-        const before = snapshot()
-        moveLeft()
-        combineRow()
-        moveLeft()
-        addColors()
-        if (snapshot() !== before) generate()
-    }
-    function keyRight() {
-        const before = snapshot()
-        moveRight()
-        combineRow()
-        moveRight()
-        addColors()
-        if (snapshot() !== before) generate()
-    }
-    function keyUp() {
-        const before = snapshot()
-        moveUp()
-        combineColumn()
-        moveUp()
-        addColors()
-        if (snapshot() !== before) generate()
-    }
-    function keyDown() {
-        const before = snapshot()
-        moveDown()
-        combineColumn()
-        moveDown()
-        addColors()
-        if (snapshot() !== before) generate()
-    }
-    //check for number 2048 in the squares to WIN function
-    function checkWin(){
-        for(let i =0; i<squares.length; i++){
-            if(squares[i].innerHTML == 2048){
-                showResult('You WIN!', 'win')
-                document.removeEventListener('keydown', control)
-                return
+    function move(dir) {
+        if (isAnimating || gameOver) return
+
+        // FLIP step 1: record where every tile is right now
+        const firstRects = new Map()
+        tilesLayer.querySelectorAll('.tile').forEach(el => firstRects.set(el, el.getBoundingClientRect()))
+
+        let moved = false
+        let scoreGain = 0
+        const removed = [] // absorbed tiles, deleted after the slide
+        const popped = []  // survivors that merged, get a bump after the slide
+
+        for (const line of lineOrder(dir)) {
+            const tiles = line.map(i => board[i]).filter(Boolean)
+            line.forEach(i => { board[i] = null })
+
+            let target = 0
+            let k = 0
+            while (k < tiles.length) {
+                const cur = tiles[k]
+                const ti = line[target]
+                if (k + 1 < tiles.length && tiles[k + 1].value === cur.value) {
+                    // Merge: both slide to the same slot; survivor doubles afterward
+                    const absorbed = tiles[k + 1]
+                    placeEl(cur.el, ti); cur.idx = ti
+                    placeEl(absorbed.el, ti)
+                    board[ti] = cur
+                    cur.mergeTo = cur.value * 2
+                    scoreGain += cur.mergeTo
+                    removed.push(absorbed.el)
+                    popped.push(cur)
+                    moved = true
+                    k += 2
+                } else {
+                    if (cur.idx !== ti) moved = true
+                    placeEl(cur.el, ti); cur.idx = ti
+                    board[ti] = cur
+                    k += 1
+                }
+                target += 1
             }
         }
-    }
-    function checkForGameOver(){
-        // A board is "over" only if it's full AND no adjacent pair can still merge
-        let zeroes = 0
-        for(let i =0; i< squares.length; i++){
-            if(squares[i].innerHTML == 0){
-                zeroes++
+
+        if (!moved) return
+
+        // FLIP steps 2-4: measure new spot, invert to old spot, then play to new
+        isAnimating = true
+        const els = Array.from(tilesLayer.querySelectorAll('.tile'))
+        els.forEach(el => {
+            const first = firstRects.get(el)
+            if (!first) return
+            const last = el.getBoundingClientRect()
+            const dx = first.left - last.left
+            const dy = first.top - last.top
+            if (dx || dy) {
+                el.style.transition = 'none'
+                el.style.transform = `translate(${dx}px, ${dy}px)`
             }
-        }
-        if (zeroes > 0) return
-        // Board is full — check whether any adjacent horizontal or vertical pair is equal
-        for (let i = 0; i < squares.length; i++) {
-            const v = squares[i].innerHTML
-            // right neighbor (skip if at right edge)
-            if ((i + 1) % 4 !== 0 && squares[i + 1].innerHTML === v) return
-            // down neighbor (skip if in bottom row)
-            if (i < 12 && squares[i + width].innerHTML === v) return
-        }
-        showResult('You Lose!', 'lose')
-        document.removeEventListener('keydown', control)
+        })
+        void tilesLayer.offsetWidth // force reflow so the invert takes hold
+        els.forEach(el => {
+            if (el.style.transform) {
+                el.style.transition = ''
+                el.style.transform = ''
+            }
+        })
+
+        setTimeout(() => finalize(removed, popped, scoreGain), ANIM_MS)
     }
-    //add colours
-    function addColors(){
-        for(let i = 0; i<squares.length; i++){
-            // Sync data-value with the current cell number so the CSS picks the right tile color
-            squares[i].setAttribute('data-value', String(squares[i].innerHTML))
-        }
+
+    function finalize(removed, popped, scoreGain) {
+        removed.forEach(el => el.remove())
+        popped.forEach(t => {
+            t.value = t.mergeTo
+            t.mergeTo = null
+            t.el.textContent = t.value
+            t.el.setAttribute('data-value', String(t.value))
+            t.el.classList.remove('is-merged')
+            void t.el.offsetWidth
+            t.el.classList.add('is-merged')
+        })
+        if (scoreGain) { score += scoreGain; syncScore() }
+
+        const won = popped.some(t => t.value === 2048)
+        generate()
+        isAnimating = false
+
+        if (won) { showResult('You WIN!', 'win'); gameOver = true; return }
+        if (isGameOver()) { showResult('You Lose!', 'lose'); gameOver = true }
     }
-    // Show the win/lose overlay with the right styling hook
+
+    // Over only when the board is full AND no adjacent pair can still merge
+    function isGameOver() {
+        for (let i = 0; i < CELLS; i++) if (!board[i]) return false
+        for (let i = 0; i < CELLS; i++) {
+            const v = board[i].value
+            if ((i % SIZE !== SIZE - 1) && board[i + 1] && board[i + 1].value === v) return false
+            if (i < CELLS - SIZE && board[i + SIZE] && board[i + SIZE].value === v) return false
+        }
+        return true
+    }
+
     function showResult(message, kind) {
         resultDisplay.classList.add('is-visible', kind)
         const textNode = resultDisplay.querySelector('.result-text')
         if (textNode) textNode.textContent = message
     }
-    // Reset the game to a fresh state
+
     function restart() {
         score = 0
         scoreDisplay.innerHTML = 0
         resultDisplay.classList.remove('is-visible', 'win', 'lose')
-        for (let i = 0; i < squares.length; i++) {
-            squares[i].innerHTML = 0
-            squares[i].setAttribute('data-value', '0')
-        }
-        document.removeEventListener('keydown', control)
-        document.addEventListener('keydown', control)
+        tilesLayer.innerHTML = ''
+        for (let i = 0; i < CELLS; i++) board[i] = null
+        gameOver = false
+        isAnimating = false
         generate()
         generate()
     }
+
+    // ---- Input: keyboard + swipe both funnel into move() ----
+    function keyLeft()  { move('left') }
+    function keyRight() { move('right') }
+    function keyUp()    { move('up') }
+    function keyDown()  { move('down') }
+
+    function control(e) {
+        if (e.key === 'ArrowLeft') keyLeft()
+        else if (e.key === 'ArrowRight') keyRight()
+        else if (e.key === 'ArrowUp') keyUp()
+        else if (e.key === 'ArrowDown') keyDown()
+    }
+    document.addEventListener('keydown', control)
+
+    // Swipe fires mid-gesture (the instant the threshold is crossed) so it feels instant
+    let touchStartX = 0
+    let touchStartY = 0
+    let swipeHandled = false
+    const SWIPE_THRESHOLD = 22
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX
+        touchStartY = e.touches[0].clientY
+        swipeHandled = false
+    }, { passive: true })
+
+    document.addEventListener('touchmove', (e) => {
+        if (swipeHandled) return
+        const dx = e.touches[0].clientX - touchStartX
+        const dy = e.touches[0].clientY - touchStartY
+        const absX = Math.abs(dx)
+        const absY = Math.abs(dy)
+        if (Math.max(absX, absY) < SWIPE_THRESHOLD) return
+
+        swipeHandled = true // one drag => one move
+        if (absX > absY) { if (dx > 0) keyRight(); else keyLeft() }
+        else { if (dy > 0) keyDown(); else keyUp() }
+    }, { passive: true })
+
     restartButton.addEventListener('click', restart)
-    // The "Play again" button inside the overlay also restarts
     const overlayRestart = resultDisplay.querySelector('.result-restart')
     if (overlayRestart) overlayRestart.addEventListener('click', restart)
+
+    // ---- Kick off ----
+    generate()
+    generate()
 })
